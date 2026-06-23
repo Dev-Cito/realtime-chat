@@ -1,0 +1,9 @@
+{
+  "name": "realtime-chat",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:backend": "pnpm --filter backend start:dev",
+    "dev:frontend": "pnpm --filter frontend dev"
+  }
+}
