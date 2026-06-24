@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: chat_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: chat_db
+    ports:
+      - "5436:5432"
+    volumes:
+      - chat_postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: chat_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - chat_redis_data:/data
+
+volumes:
+  chat_postgres_data:
+  chat_redis_data:
