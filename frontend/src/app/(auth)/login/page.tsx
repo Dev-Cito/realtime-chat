@@ -33,30 +33,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950">
-      <div className="w-full max-w-md bg-gray-900 rounded-2xl border border-gray-800 p-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0f0d]">
+      <div className="w-full max-w-md bg-[#111a15] rounded-2xl border border-[#1e3327] p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white mb-1">Welcome back 👋</h1>
-          <p className="text-gray-400 text-sm">Sign in to continue chatting</p>
+          <h1 className="text-2xl font-bold text-[#f0fdf4] mb-1">Welcome back 👋</h1>
+          <p className="text-[#86efac] text-sm">Sign in to continue chatting</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+            <label className="block text-sm font-medium text-[#f0fdf4] mb-1">Email</label>
             <input
               {...register('email')}
               type="email"
-              className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-[#162019] border border-[#1e3327] text-[#f0fdf4] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-green-500"
             />
             {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
+            <label className="block text-sm font-medium text-[#f0fdf4] mb-1">Password</label>
             <input
               {...register('password')}
               type="password"
-              className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-[#162019] border border-[#1e3327] text-[#f0fdf4] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-green-500"
             />
             {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
           </div>
@@ -70,15 +70,15 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-blue-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
+            className="w-full bg-[#16a34a] text-[#f0fdf4] rounded-lg py-2.5 text-sm font-medium hover:bg-[#14532d] transition disabled:opacity-50"
           >
             {isSubmitting ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-[#4ade80] mt-6">
           No account?{' '}
-          <Link href="/register" className="text-blue-400 hover:text-blue-300">Sign up</Link>
+          <Link href="/register" className="text-green-400 hover:text-green-300">Sign up</Link>
         </p>
       </div>
     </div>

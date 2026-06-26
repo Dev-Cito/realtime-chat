@@ -1,13 +1,16 @@
 'use client';
 import { useCallback, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { getSocket } from '@/lib/socket';
 import { useChatStore } from '@/store/chat.store';
 import { api } from '@/lib/api';
 import { Room, Message, ApiResponse } from '@/types';
 
 export const useChat = () => {
-  const { setMessages, setActiveRoom, addRoom } = useChatStore();
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const { setMessages, setActiveRoom, addRoom } = useChatStore(
+    useShallow((s) => ({ setMessages: s.setMessages, setActiveRoom: s.setActiveRoom, addRoom: s.addRoom }))
+  );
+  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const joinRoom = useCallback(async (room: Room, token: string) => {
     const socket = getSocket(token);

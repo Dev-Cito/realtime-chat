@@ -42,50 +42,50 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950">
-      <div className="w-full max-w-md bg-gray-900 rounded-2xl border border-gray-800 p-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0f0d]">
+      <div className="w-full max-w-md bg-[#111a15] rounded-2xl border border-[#1e3327] p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white mb-1">Create account 🚀</h1>
-          <p className="text-gray-400 text-sm">Join the conversation</p>
+          <h1 className="text-2xl font-bold text-[#f0fdf4] mb-1">Create account 🚀</h1>
+          <p className="text-[#86efac] text-sm">Join the conversation</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Username</label>
+            <label className="block text-sm font-medium text-[#f0fdf4] mb-1">Username</label>
             <input
               {...register('username')}
               type="text"
-              className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-[#162019] border border-[#1e3327] text-[#f0fdf4] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-green-500"
             />
             {errors.username && <p className="text-red-400 text-xs mt-1">{errors.username.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+            <label className="block text-sm font-medium text-[#f0fdf4] mb-1">Email</label>
             <input
               {...register('email')}
               type="email"
-              className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-[#162019] border border-[#1e3327] text-[#f0fdf4] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-green-500"
             />
             {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
+            <label className="block text-sm font-medium text-[#f0fdf4] mb-1">Password</label>
             <input
               {...register('password')}
               type="password"
-              className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-[#162019] border border-[#1e3327] text-[#f0fdf4] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-green-500"
             />
             {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Confirm password</label>
+            <label className="block text-sm font-medium text-[#f0fdf4] mb-1">Confirm password</label>
             <input
               {...register('confirmPassword')}
               type="password"
-              className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-[#162019] border border-[#1e3327] text-[#f0fdf4] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-green-500"
             />
             {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword.message}</p>}
           </div>
@@ -99,15 +99,15 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-blue-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
+            className="w-full bg-[#16a34a] text-[#f0fdf4] rounded-lg py-2.5 text-sm font-medium hover:bg-[#14532d] transition disabled:opacity-50"
           >
             {isSubmitting ? 'Creating...' : 'Create account'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-[#4ade80] mt-6">
           Already have an account?{' '}
-          <Link href="/login" className="text-blue-400 hover:text-blue-300">Sign in</Link>
+          <Link href="/login" className="text-green-400 hover:text-green-300">Sign in</Link>
         </p>
       </div>
     </div>

@@ -20,9 +20,9 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-gray-900 border-b border-gray-800 px-6 py-4">
+    <nav className="bg-[#111a15] border-b border-[#1e3327] px-6 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <Link href="/chat" className="text-xl font-bold text-white">
+        <Link href="/chat" className="text-xl font-bold text-[#f0fdf4]">
           💬 ChatApp
         </Link>
         <div className="flex items-center gap-6">
@@ -30,23 +30,23 @@ export default function Navbar() {
             <>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-400" />
-                <span className="text-sm text-gray-300">{user?.username}</span>
+                <span className="text-sm text-[#f0fdf4]">{user?.username}</span>
               </div>
               <button
                 onClick={handleLogout}
-                className="text-sm text-gray-400 hover:text-white transition"
+                className="text-sm text-[#86efac] hover:text-[#f0fdf4] transition"
               >
                 Logout
               </button>
             </>
           ) : (
             <>
-              <Link href="/login" className="text-sm text-gray-400 hover:text-white transition">
+              <Link href="/login" className="text-sm text-[#86efac] hover:text-[#f0fdf4] transition">
                 Login
               </Link>
               <Link
                 href="/register"
-                className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                className="text-sm bg-[#16a34a] text-[#f0fdf4] px-4 py-2 rounded-lg hover:bg-[#14532d] transition"
               >
                 Sign up
               </Link>
