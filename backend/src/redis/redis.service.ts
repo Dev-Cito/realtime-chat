@@ -1,4 +1,9 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
@@ -12,14 +17,18 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   constructor(private config: ConfigService) {}
 
   async onModuleInit() {
-    const options = {
-      host: this.config.get('REDIS_HOST', 'localhost'),
-      port: this.config.get<number>('REDIS_PORT', 6379),
-    };
+    const redisUrl = this.config.get('REDIS_URL');
 
-    this.client = new Redis(options);
-    this.subscriber = new Redis(options);
-    this.publisher = new Redis(options);
+    const options = redisUrl
+      ? redisUrl
+      : {
+          host: this.config.get('REDIS_HOST', 'localhost'),
+          port: this.config.get<number>('REDIS_PORT', 6379),
+        };
+
+    this.client = new Redis(options as any);
+    this.subscriber = new Redis(options as any);
+    this.publisher = new Redis(options as any);
 
     this.client.on('connect', () => this.logger.log('Redis client connected'));
     this.client.on('error', (err) => this.logger.error('Redis error:', err));
@@ -70,7 +79,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.publisher.publish(channel, message);
   }
 
-  async subscribe(channel: string, callback: (message: string) => void): Promise<void> {
+  async subscribe(
+    channel: string,
+    callback: (message: string) => void,
+  ): Promise<void> {
     await this.subscriber.subscribe(channel);
     this.subscriber.on('message', (ch, msg) => {
       if (ch === channel) callback(msg);
