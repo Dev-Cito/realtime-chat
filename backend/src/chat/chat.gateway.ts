@@ -158,6 +158,25 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @UseGuards(WsJwtGuard)
+  @SubscribeMessage('room:create')
+  async handleCreateRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { name: string; description?: string },
+  ) {
+    try {
+      const user = client.data.user;
+      const room = await this.roomsService.create(
+        { name: data.name, description: data.description, type: 'public' as any },
+        user,
+      );
+      this.server.emit('room:new', room);
+      return { success: true, room };
+    } catch (error) {
+      throw new WsException(error.message);
+    }
+  }
+
+  @UseGuards(WsJwtGuard)
   @SubscribeMessage('users:online')
   async handleGetOnlineUsers(@ConnectedSocket() client: Socket) {
     const onlineUsers = await this.redisService.getOnlineUsers();

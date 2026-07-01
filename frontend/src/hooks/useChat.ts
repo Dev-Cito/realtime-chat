@@ -7,8 +7,8 @@ import { api } from '@/lib/api';
 import { Room, Message, ApiResponse } from '@/types';
 
 export const useChat = () => {
-  const { setMessages, setActiveRoom, addRoom } = useChatStore(
-    useShallow((s) => ({ setMessages: s.setMessages, setActiveRoom: s.setActiveRoom, addRoom: s.addRoom }))
+  const { setMessages, setActiveRoom } = useChatStore(
+    useShallow((s) => ({ setMessages: s.setMessages, setActiveRoom: s.setActiveRoom }))
   );
   const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
@@ -57,16 +57,15 @@ export const useChat = () => {
     }
   }, []);
 
-  const createRoom = useCallback(async (name: string, description?: string) => {
-    const res = await api.post<ApiResponse<Room>>('/rooms', {
-      name,
-      description,
-      type: 'public',
+  const createRoom = useCallback((name: string, description?: string): Promise<Room> => {
+    return new Promise((resolve, reject) => {
+      const socket = getSocket();
+      socket.emit('room:create', { name, description }, (response: { success: boolean; room: Room; error?: string }) => {
+        if (response?.success) resolve(response.room);
+        else reject(new Error(response?.error ?? 'Failed to create room'));
+      });
     });
-    const room = res.data.data;
-    addRoom(room);
-    return room;
-  }, [addRoom]);
+  }, []);
 
   const loadRooms = useCallback(async () => {
     const res = await api.get<ApiResponse<Room[]>>('/rooms');

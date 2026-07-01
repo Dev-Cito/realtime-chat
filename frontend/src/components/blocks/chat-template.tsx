@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import {
   SidebarInset, Sidebar, SidebarContent, SidebarGroup,
   SidebarGroupContent, SidebarGroupLabel, SidebarMenu,
@@ -22,6 +22,7 @@ import { useSocket } from "@/hooks/useSocket"
 import { Room } from "@/types"
 import { api } from "@/lib/api"
 import { disconnectSocket } from "@/lib/socket"
+import { clearSessionCookie } from "@/lib/session"
 
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false })
 
@@ -37,6 +38,8 @@ export const ChatTemplate = () => {
   const { rooms, activeRoom, messages, typingUsers, setRooms } = useChatStore()
   const { joinRoom, sendMessage, sendTyping, createRoom, loadRooms } = useChat()
   const socket = useSocket(token)
+
+  const bottomRef = useRef<HTMLDivElement>(null)
 
   const [loading, setLoading] = useState(true)
   const [content, setContent] = useState("")
@@ -91,6 +94,20 @@ export const ChatTemplate = () => {
   const activeMessages = activeRoom ? (messages[activeRoom.id] ?? []) : []
   const activeTyping = activeRoom ? (typingUsers[activeRoom.id] ?? []) : []
 
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [activeMessages, activeTyping])
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const now = new Date()
+    const isToday = date.toDateString() === now.toDateString()
+    const isThisWeek = date >= new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6)
+    if (isToday) return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    if (isThisWeek) return date.toLocaleDateString('en-US', { weekday: 'short' }) + ' ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
   const renderMessage = (content: string) => {
     if (content.startsWith('[image]')) {
       const url = content.replace('[image]', '')
@@ -144,6 +161,7 @@ export const ChatTemplate = () => {
                   <DropdownMenuItem onClick={async () => {
                     try { await api.post('/auth/logout') } catch { /* ignore */ }
                     disconnectSocket()
+                    clearSessionCookie()
                     clearAuth()
                     window.location.href = '/login'
                   }}>
@@ -177,7 +195,21 @@ export const ChatTemplate = () => {
               </div>
 
               <ScrollArea className="grow">
-                {rooms.map((room) => (
+                {rooms.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                    <div className="w-12 h-12 rounded-full bg-[#1c2b20] flex items-center justify-center mb-3">
+                      <Users className="w-5 h-5 text-[#4ade80]" />
+                    </div>
+                    <p className="text-sm font-medium text-[#f0fdf4] mb-1">No rooms yet</p>
+                    <p className="text-xs text-[#86efac] mb-4">Create one to start chatting</p>
+                    <button
+                      onClick={() => setShowCreateRoom(true)}
+                      className="text-xs bg-[#16a34a] text-[#f0fdf4] px-3 py-1.5 rounded-lg hover:bg-[#14532d] transition"
+                    >
+                      Create a room
+                    </button>
+                  </div>
+                ) : rooms.map((room) => (
                   <button
                     key={room.id}
                     onClick={() => handleJoinRoom(room)}
@@ -248,7 +280,7 @@ export const ChatTemplate = () => {
                                 {renderMessage(message.content)}
                               </div>
                               <span className="text-xs text-muted-foreground mt-1">
-                                {new Date(message.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                {formatTime(message.createdAt)}
                               </span>
                             </div>
                           </div>
@@ -264,6 +296,7 @@ export const ChatTemplate = () => {
                           {activeTyping.map(t => t.username).join(', ')} is typing...
                         </div>
                       )}
+                      <div ref={bottomRef} />
                     </div>
                   </ScrollArea>
 

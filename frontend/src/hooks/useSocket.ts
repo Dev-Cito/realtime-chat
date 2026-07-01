@@ -3,11 +3,11 @@ import { useEffect, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
 import { useChatStore } from '@/store/chat.store';
-import { Message, TypingUser } from '@/types';
+import { Message, Room, TypingUser } from '@/types';
 
 export const useSocket = (token: string | null) => {
   const socketRef = useRef<Socket | null>(null);
-  const { addMessage, setTyping, setUserOnline, setUserOffline, setOnlineUsers } = useChatStore();
+  const { addMessage, addRoom, setTyping, setUserOnline, setUserOffline, setOnlineUsers } = useChatStore();
 
   useEffect(() => {
     if (!token) return;
@@ -44,12 +44,17 @@ export const useSocket = (token: string | null) => {
       setOnlineUsers(users);
     });
 
+    socket.on('room:new', (room: Room) => {
+      addRoom(room);
+    });
+
     return () => {
       socket.off('message:new');
       socket.off('message:typing');
       socket.off('user:online');
       socket.off('user:offline');
       socket.off('users:online');
+      socket.off('room:new');
     };
   }, [token]);
 

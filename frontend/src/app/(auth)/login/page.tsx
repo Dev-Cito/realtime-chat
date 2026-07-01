@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
+import { setSessionCookie } from '@/lib/session';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -26,6 +27,7 @@ export default function LoginPage() {
       const token = res.data.data.token;
       const meRes = await api.get('/auth/me');
       setAuth(meRes.data.data, token);
+      setSessionCookie();
       router.push('/chat');
     } catch {
       setError('root', { message: 'Invalid email or password' });

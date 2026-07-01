@@ -6,19 +6,15 @@ const AUTH_ROUTES = ['/login', '/register'];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.next();
-  }
-
-  const token = request.cookies.get('accessToken')?.value;
+  const session = request.cookies.get('session')?.value;
   const isProtected = PROTECTED_ROUTES.some((r) => pathname.startsWith(r));
   const isAuth = AUTH_ROUTES.some((r) => pathname.startsWith(r));
 
-  if (isProtected && !token) {
+  if (isProtected && !session) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  if (isAuth && token) {
+  if (isAuth && session) {
     return NextResponse.redirect(new URL('/chat', request.url));
   }
 
