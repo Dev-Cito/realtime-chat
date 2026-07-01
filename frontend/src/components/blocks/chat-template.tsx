@@ -52,6 +52,9 @@ export const ChatTemplate = () => {
   const [showCreateRoom, setShowCreateRoom] = useState(false)
   const [newRoomName, setNewRoomName] = useState("")
 
+  const activeMessages = activeRoom ? (messages[activeRoom.id] ?? []) : []
+  const activeTyping = activeRoom ? (typingUsers[activeRoom.id] ?? []) : []
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -70,6 +73,10 @@ export const ChatTemplate = () => {
     }
     init()
   }, [])
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [activeMessages.length, activeTyping.length, activeRoom?.id])
 
   if (loading) {
     return <div className="min-h-screen bg-[#0a0f0d]" />
@@ -95,13 +102,6 @@ export const ChatTemplate = () => {
     setNewRoomName("")
     handleJoinRoom(room)
   }
-
-  const activeMessages = activeRoom ? (messages[activeRoom.id] ?? []) : []
-  const activeTyping = activeRoom ? (typingUsers[activeRoom.id] ?? []) : []
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [activeMessages.length, activeTyping.length, activeRoom?.id])
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr)
