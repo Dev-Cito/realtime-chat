@@ -38,6 +38,7 @@ export const ChatTemplate = () => {
   const { joinRoom, sendMessage, sendTyping, createRoom, loadRooms } = useChat()
   const socket = useSocket(token)
 
+  const [loading, setLoading] = useState(true)
   const [content, setContent] = useState("")
   const [showEmojis, setShowEmojis] = useState(false)
   const [showCreateRoom, setShowCreateRoom] = useState(false)
@@ -46,20 +47,25 @@ export const ChatTemplate = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        if (!isAuthenticated) {
-          const meRes = await api.get('/auth/me')
-          const currentToken = useAuthStore.getState().token
-          setAuth(meRes.data.data, currentToken ?? '')
-        }
+        const meRes = await api.get('/auth/me')
+        const currentToken = useAuthStore.getState().token
+        setAuth(meRes.data.data, currentToken ?? '')
         const roomsList = await loadRooms()
         setRooms(roomsList)
       } catch {
         clearAuth()
         window.location.href = '/login'
+        return
+      } finally {
+        setLoading(false)
       }
     }
     init()
   }, [])
+
+  if (loading) {
+    return <div className="min-h-screen bg-[#0a0f0d]" />
+  }
 
   const handleJoinRoom = (room: Room) => {
     if (!token) return
