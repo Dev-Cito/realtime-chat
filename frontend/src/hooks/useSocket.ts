@@ -1,13 +1,23 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import { Socket } from 'socket.io-client';
+import { useShallow } from 'zustand/react/shallow';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
 import { useChatStore } from '@/store/chat.store';
 import { Message, Room, TypingUser } from '@/types';
 
 export const useSocket = (token: string | null) => {
   const socketRef = useRef<Socket | null>(null);
-  const { addMessage, addRoom, setTyping, setUserOnline, setUserOffline, setOnlineUsers } = useChatStore();
+  const { addMessage, addRoom, setTyping, setUserOnline, setUserOffline, setOnlineUsers } = useChatStore(
+    useShallow((s) => ({
+      addMessage: s.addMessage,
+      addRoom: s.addRoom,
+      setTyping: s.setTyping,
+      setUserOnline: s.setUserOnline,
+      setUserOffline: s.setUserOffline,
+      setOnlineUsers: s.setOnlineUsers,
+    }))
+  );
 
   useEffect(() => {
     if (!token) return;

@@ -15,6 +15,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Menu, MessageCircle, Phone, CircleFadingPlus, Settings, User2, ChevronUp, Search, Send, Smile, Video, SquarePen, Users } from "lucide-react"
 import dynamic from "next/dynamic"
+import { useShallow } from "zustand/react/shallow"
 import { useAuthStore } from "@/store/auth.store"
 import { useChatStore } from "@/store/chat.store"
 import { useChat } from "@/hooks/useChat"
@@ -34,8 +35,12 @@ const menuItems = [
 
 export const ChatTemplate = () => {
   const { toggleSidebar } = useSidebar()
-  const { user, token, isAuthenticated, setAuth, clearAuth } = useAuthStore()
-  const { rooms, activeRoom, messages, typingUsers, setRooms } = useChatStore()
+  const { user, token, isAuthenticated, setAuth, clearAuth } = useAuthStore(
+    useShallow((s) => ({ user: s.user, token: s.token, isAuthenticated: s.isAuthenticated, setAuth: s.setAuth, clearAuth: s.clearAuth }))
+  )
+  const { rooms, activeRoom, messages, typingUsers, setRooms } = useChatStore(
+    useShallow((s) => ({ rooms: s.rooms, activeRoom: s.activeRoom, messages: s.messages, typingUsers: s.typingUsers, setRooms: s.setRooms }))
+  )
   const { joinRoom, sendMessage, sendTyping, createRoom, loadRooms } = useChat()
   const socket = useSocket(token)
 
@@ -96,7 +101,7 @@ export const ChatTemplate = () => {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [activeMessages, activeTyping])
+  }, [activeMessages.length, activeTyping.length, activeRoom?.id])
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr)
