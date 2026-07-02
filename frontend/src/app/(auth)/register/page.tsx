@@ -39,7 +39,8 @@ export default function RegisterPage() {
       setSessionCookie();
       router.push('/chat');
     } catch (err: any) {
-      setError('root', { message: err.response?.data?.message ?? 'Something went wrong' });
+      const msg = err.response?.data?.message ?? 'Something went wrong';
+      setError('root', { message: Array.isArray(msg) ? msg.join(', ') : msg });
     }
   };
 

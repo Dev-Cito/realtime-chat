@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Room, RoomType } from './entities/room.entity';
@@ -21,10 +21,13 @@ export class RoomsService {
     return this.roomsRepository.save(room);
   }
 
-  async findAll(): Promise<Room[]> {
+  async findAll(limit = 50, offset = 0): Promise<Room[]> {
     return this.roomsRepository.find({
       where: { type: RoomType.PUBLIC },
+      relations: { members: true, createdBy: true },
       order: { createdAt: 'DESC' },
+      take: limit,
+      skip: offset,
     });
   }
 
@@ -56,28 +59,26 @@ export class RoomsService {
   async getUserRooms(userId: string): Promise<Room[]> {
     return this.roomsRepository
       .createQueryBuilder('room')
+      .innerJoin('room.members', 'self', 'self.id = :userId', { userId })
       .leftJoinAndSelect('room.members', 'member')
       .leftJoinAndSelect('room.createdBy', 'creator')
-      .where('member.id = :userId', { userId })
       .orderBy('room.updatedAt', 'DESC')
       .getMany();
   }
 
   async createDirectRoom(user1: User, user2: User): Promise<Room> {
+    // Single targeted query: find a DIRECT room that has BOTH users as members.
+    // Avoids loading all direct rooms into memory (race condition + N+1 fix).
     const existing = await this.roomsRepository
       .createQueryBuilder('room')
+      .innerJoin('room.members', 'm1', 'm1.id = :user1Id', { user1Id: user1.id })
+      .innerJoin('room.members', 'm2', 'm2.id = :user2Id', { user2Id: user2.id })
       .leftJoinAndSelect('room.members', 'member')
+      .leftJoinAndSelect('room.createdBy', 'creator')
       .where('room.type = :type', { type: RoomType.DIRECT })
-      .getMany();
+      .getOne();
 
-    const existingDirect = existing.find(
-      (r) =>
-        r.members.length === 2 &&
-        r.members.some((m) => m.id === user1.id) &&
-        r.members.some((m) => m.id === user2.id),
-    );
-
-    if (existingDirect) return existingDirect;
+    if (existing) return existing;
 
     const room = this.roomsRepository.create({
       type: RoomType.DIRECT,

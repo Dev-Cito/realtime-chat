@@ -35,7 +35,8 @@ export class AuthService {
   async getMe(userId: string) {
     const user = await this.usersService.findById(userId);
     const { password, ...result } = user as any;
-    return result;
+    const { accessToken } = await this.generateToken(userId, user.email);
+    return { ...result, token: accessToken };
   }
 
   private async generateToken(userId: string, email: string) {

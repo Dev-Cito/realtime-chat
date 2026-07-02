@@ -29,8 +29,9 @@ export default function LoginPage() {
       setAuth(meRes.data.data, token);
       setSessionCookie();
       router.push('/chat');
-    } catch {
-      setError('root', { message: 'Invalid email or password' });
+    } catch (err: any) {
+      const msg = err.response?.data?.message ?? 'Invalid email or password';
+      setError('root', { message: Array.isArray(msg) ? msg.join(', ') : msg });
     }
   };
 

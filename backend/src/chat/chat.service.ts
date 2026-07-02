@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Message } from './entities/message.entity';
@@ -33,6 +33,7 @@ export class ChatService {
       relations: { sender: true },
     });
     if (!message) throw new NotFoundException('Message not found');
+    if (message.sender.id !== userId) throw new ForbiddenException('You can only delete your own messages');
     await this.messagesRepository.remove(message);
   }
 

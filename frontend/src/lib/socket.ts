@@ -17,12 +17,20 @@ export const getSocket = (token?: string): Socket => {
 export const connectSocket = (token: string): Socket => {
   const s = getSocket(token);
   s.auth = { token };
+
+  if (!token) {
+    console.warn('[socket] connectSocket called with empty token — connection will likely be rejected');
+  }
+
   if (s.connected && connectedToken !== token) {
+    console.log('[socket] token changed, reconnecting');
     s.disconnect();
     s.connect();
   } else if (!s.connected) {
+    console.log('[socket] connecting, token length:', token?.length ?? 0);
     s.connect();
   }
+
   connectedToken = token;
   return s;
 };

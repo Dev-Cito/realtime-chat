@@ -11,10 +11,23 @@ import { RedisService } from '../redis/redis.service';
 import { WsJwtGuard } from '../auth/guards/ws-jwt.guard';
 import { WsJwtStrategy } from '../auth/strategies/ws-jwt.strategy';
 import { UsersService } from '../users/users.service';
+import { RoomType } from '../rooms/entities/room.entity';
+
+const ALLOWED_ORIGINS = [
+  process.env.FRONTEND_URL ?? 'http://localhost:3000',
+  'http://localhost:3000',
+  /\.vercel\.app$/,
+];
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    origin: (origin: string, callback: (err: Error | null, allow?: boolean) => void) => {
+      if (!origin) return callback(null, true);
+      const allowed = ALLOWED_ORIGINS.some((o) =>
+        typeof o === 'string' ? o === origin : o.test(origin),
+      );
+      callback(allowed ? null : new Error('Not allowed by CORS'), allowed);
+    },
     credentials: true,
   },
   namespace: '/',
@@ -25,6 +38,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly logger = new Logger(ChatGateway.name);
 
+  // Per-user rate limit: max 30 messages/minute
+  private readonly msgRateLimit = new Map<string, { count: number; resetAt: number }>();
+
   constructor(
     private chatService: ChatService,
     private roomsService: RoomsService,
@@ -32,6 +48,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private wsJwtStrategy: WsJwtStrategy,
     private usersService: UsersService,
   ) {}
+
+  private checkRateLimit(userId: string, max = 30): boolean {
+    const now = Date.now();
+    const entry = this.msgRateLimit.get(userId);
+    if (!entry || now > entry.resetAt) {
+      this.msgRateLimit.set(userId, { count: 1, resetAt: now + 60_000 });
+      return true;
+    }
+    if (entry.count >= max) return false;
+    entry.count++;
+    return true;
+  }
 
   async handleConnection(client: Socket) {
     try {
@@ -52,7 +80,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       this.server.emit('user:online', { userId: user.id, username: user.username });
       this.logger.log(`Client connected: ${user.username} (${client.id})`);
-    } catch {
+    } catch (err) {
+      this.logger.error(`Connection rejected: ${(err as Error).message}`);
       client.disconnect();
     }
   }
@@ -61,11 +90,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const user = client.data.user;
     if (!user) return;
 
-    await this.redisService.setUserOffline(user.id);
-    await this.usersService.update(user.id, {
-      isOnline: false,
-      lastSeen: new Date(),
-    });
+    try {
+      await this.redisService.setUserOffline(user.id);
+    } catch (err) {
+      this.logger.error(`Redis setUserOffline failed for ${user.id}: ${(err as Error).message}`);
+    }
+
+    try {
+      await this.usersService.update(user.id, { isOnline: false, lastSeen: new Date() });
+    } catch (err) {
+      this.logger.error(`DB update on disconnect failed for ${user.id}: ${(err as Error).message}`);
+    }
 
     this.server.emit('user:offline', { userId: user.id, username: user.username });
     this.logger.log(`Client disconnected: ${user.username} (${client.id})`);
@@ -79,7 +114,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     try {
       const user = client.data.user;
-      const room = await this.roomsService.join(data.roomId, user);
+      const room = await this.roomsService.findOne(data.roomId);
+
+      // Private rooms: only existing members can join
+      if (room.type === RoomType.PRIVATE) {
+        const isMember = room.members.some((m) => m.id === user.id);
+        if (!isMember) throw new WsException('Access denied: private room');
+      }
+
+      await this.roomsService.join(data.roomId, user);
       client.join(data.roomId);
 
       const messages = await this.chatService.getRecentMessages(data.roomId);
@@ -92,7 +135,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       return { success: true, room };
     } catch (error) {
-      throw new WsException(error.message);
+      throw new WsException((error as Error).message);
     }
   }
 
@@ -121,10 +164,28 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     try {
       const user = client.data.user;
+
+      // Input validation
+      if (!data.content || typeof data.content !== 'string' || !data.content.trim()) {
+        throw new WsException('Message content cannot be empty');
+      }
+      if (data.content.length > 4000) {
+        throw new WsException('Message exceeds maximum length of 4000 characters');
+      }
+
+      // Rate limiting
+      if (!this.checkRateLimit(user.id)) {
+        throw new WsException('Rate limit exceeded: too many messages');
+      }
+
       const room = await this.roomsService.findOne(data.roomId);
 
+      // Membership check — user must belong to the room
+      const isMember = room.members.some((m) => m.id === user.id);
+      if (!isMember) throw new WsException('You are not a member of this room');
+
       const message = await this.chatService.createMessage(
-        data.content, user, room,
+        data.content.trim(), user, room,
       );
 
       const messagePayload = {
@@ -138,7 +199,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(data.roomId).emit('message:new', messagePayload);
       return { success: true, message: messagePayload };
     } catch (error) {
-      throw new WsException(error.message);
+      throw new WsException((error as Error).message);
     }
   }
 
@@ -164,15 +225,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { name: string; description?: string },
   ) {
     try {
+      if (!data.name || typeof data.name !== 'string' || !data.name.trim()) {
+        throw new WsException('Room name cannot be empty');
+      }
       const user = client.data.user;
       const room = await this.roomsService.create(
-        { name: data.name, description: data.description, type: 'public' as any },
+        { name: data.name.trim(), description: data.description?.trim(), type: RoomType.PUBLIC },
         user,
       );
       this.server.emit('room:new', room);
       return { success: true, room };
     } catch (error) {
-      throw new WsException(error.message);
+      throw new WsException((error as Error).message);
     }
   }
 

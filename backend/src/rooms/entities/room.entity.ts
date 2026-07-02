@@ -25,11 +25,11 @@ export class Room {
   @Column({ type: 'enum', enum: RoomType, default: RoomType.PUBLIC })
   type: RoomType;
 
-  @ManyToOne(() => User, { eager: true, nullable: true })
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn()
   createdBy: User;
 
-  @ManyToMany(() => User, { eager: true, cascade: true })
+  @ManyToMany(() => User, { cascade: true })
   @JoinTable()
   members: User[];
 
