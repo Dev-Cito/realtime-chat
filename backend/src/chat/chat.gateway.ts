@@ -75,6 +75,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const user = await this.wsJwtStrategy.validate(token);
       client.data.user = user;
 
+      // Personal channel — used to push notifications (new DMs, etc.) directly to this user
+      client.join(`user:${user.id}`);
+
       await this.redisService.setUserOnline(user.id, client.id);
       await this.usersService.update(user.id, { isOnline: true });
 
@@ -132,6 +135,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         roomId: data.roomId,
         user: { id: user.id, username: user.username },
       });
+
+      // For DM rooms: notify the other member so the room appears in their list in real-time
+      if (room.type === RoomType.DIRECT) {
+        room.members
+          .filter((m) => m.id !== user.id)
+          .forEach((m) => {
+            this.server.to(`user:${m.id}`).emit('room:new', room);
+          });
+      }
 
       return { success: true, room };
     } catch (error) {

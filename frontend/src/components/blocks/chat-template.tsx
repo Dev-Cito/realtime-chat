@@ -44,7 +44,7 @@ export const ChatTemplate = () => {
       setActiveRoom: s.setActiveRoom,
     }))
   )
-  const { joinRoom, sendMessage, sendTyping, createRoom, loadRooms, createDirectRoom } = useChat()
+  const { joinRoom, sendMessage, sendTyping, createRoom, loadRooms, loadPublicRooms, createDirectRoom } = useChat()
   useSocket(token)
 
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -59,6 +59,7 @@ export const ChatTemplate = () => {
   const [showNewDM, setShowNewDM] = useState(false)
   const [dmUsers, setDmUsers] = useState<User[]>([])
   const [dmLoading, setDmLoading] = useState(false)
+  const [publicRooms, setPublicRooms] = useState<Room[]>([])
 
   const activeMessages = activeRoom ? (messages[activeRoom.id] ?? []) : []
   const activeTyping = activeRoom ? (typingUsers[activeRoom.id] ?? []) : []
@@ -70,8 +71,11 @@ export const ChatTemplate = () => {
         // /auth/me now returns a fresh token alongside the user — no localStorage needed
         const { token: freshToken, ...userData } = meRes.data.data
         setAuth(userData, freshToken)
-        const roomsList = await loadRooms()
+        const [roomsList, allPublic] = await Promise.all([loadRooms(), loadPublicRooms()])
         setRooms(roomsList)
+        // Public rooms the user hasn't joined yet
+        const memberIds = new Set(roomsList.map((r) => r.id))
+        setPublicRooms(allPublic.filter((r) => !memberIds.has(r.id)))
       } catch {
         clearAuth()
         window.location.href = '/login'
@@ -96,8 +100,15 @@ export const ChatTemplate = () => {
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleJoinRoom = (room: Room) => {
-    console.log('joining room', room.id)
     const currentToken = token ?? useAuthStore.getState().token ?? ''
+    joinRoom(room, currentToken)
+  }
+
+  const handleJoinPublicRoom = (room: Room) => {
+    const currentToken = token ?? useAuthStore.getState().token ?? ''
+    // Optimistically move room into user's list
+    setRooms([room, ...rooms.filter((r) => r.id !== room.id)])
+    setPublicRooms((prev) => prev.filter((r) => r.id !== room.id))
     joinRoom(room, currentToken)
   }
 
@@ -329,7 +340,7 @@ export const ChatTemplate = () => {
 
           {/* Rooms list — flex-1 so the bottom nav sits naturally at the bottom */}
           <div className="flex-1 overflow-y-auto">
-            {rooms.length === 0 ? (
+            {rooms.length === 0 && publicRooms.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
                 <div className="w-14 h-14 rounded-full bg-[#1c2b20] flex items-center justify-center mb-4">
                   <Users className="w-6 h-6 text-[#4ade80]" />
@@ -343,7 +354,33 @@ export const ChatTemplate = () => {
                   Create a room
                 </button>
               </div>
-            ) : rooms.map(roomItem)}
+            ) : (
+              <>
+                {rooms.map(roomItem)}
+                {publicRooms.length > 0 && (
+                  <>
+                    <p className="px-4 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-[#4a7c59]">Public Rooms</p>
+                    {publicRooms.map((room) => (
+                      <button
+                        key={room.id}
+                        onClick={() => handleJoinPublicRoom(room)}
+                        className="px-4 w-full py-3 hover:bg-secondary cursor-pointer text-left transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar className="size-10 shrink-0">
+                            <AvatarFallback>{room.name?.[0]?.toUpperCase() ?? '#'}</AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <CardTitle className="text-sm truncate"># {room.name}</CardTitle>
+                            <CardDescription className="text-xs truncate">{room.members?.length ?? 0} members · tap to join</CardDescription>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
           </div>
 
           {/* Bottom nav — shrink-0, NOT fixed (fixed bleeds over other panels) */}
@@ -550,7 +587,7 @@ export const ChatTemplate = () => {
                 </div>
 
                 <ScrollArea className="flex-1">
-                  {rooms.length === 0 ? (
+                  {rooms.length === 0 && publicRooms.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                       <div className="w-12 h-12 rounded-full bg-[#1c2b20] flex items-center justify-center mb-3">
                         <Users className="w-5 h-5 text-[#4ade80]" />
@@ -564,7 +601,33 @@ export const ChatTemplate = () => {
                         Create a room
                       </button>
                     </div>
-                  ) : rooms.map(roomItem)}
+                  ) : (
+                    <>
+                      {rooms.map(roomItem)}
+                      {publicRooms.length > 0 && (
+                        <>
+                          <p className="px-4 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-[#4a7c59]">Public Rooms</p>
+                          {publicRooms.map((room) => (
+                            <button
+                              key={room.id}
+                              onClick={() => handleJoinPublicRoom(room)}
+                              className="px-4 w-full py-3 hover:bg-secondary cursor-pointer text-left transition-colors"
+                            >
+                              <div className="flex items-center gap-3">
+                                <Avatar className="size-10 shrink-0">
+                                  <AvatarFallback>{room.name?.[0]?.toUpperCase() ?? '#'}</AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0 flex-1">
+                                  <CardTitle className="text-sm truncate"># {room.name}</CardTitle>
+                                  <CardDescription className="text-xs truncate">{room.members?.length ?? 0} members · tap to join</CardDescription>
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                    </>
+                  )}
                 </ScrollArea>
               </div>
             </ResizablePanel>

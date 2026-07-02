@@ -108,10 +108,16 @@ export const useChat = () => {
     return res.data.data;
   }, []);
 
+  // Returns all public rooms (for discovery — user may or may not be a member)
+  const loadPublicRooms = useCallback(async () => {
+    const res = await api.get<ApiResponse<Room[]>>('/rooms');
+    return res.data.data;
+  }, []);
+
   const createDirectRoom = useCallback(async (targetUserId: string): Promise<Room> => {
     const res = await api.post<ApiResponse<Room>>('/rooms/direct', { targetUserId });
     return res.data.data;
   }, []);
 
-  return { joinRoom, leaveRoom, sendMessage, sendTyping, createRoom, loadRooms, createDirectRoom };
+  return { joinRoom, leaveRoom, sendMessage, sendTyping, createRoom, loadRooms, loadPublicRooms, createDirectRoom };
 };

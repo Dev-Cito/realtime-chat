@@ -26,7 +26,11 @@ export const useChatStore = create<ChatState>((set) => ({
   onlineUsers: {},
 
   setRooms: (rooms) => set({ rooms }),
-  addRoom: (room) => set((s) => ({ rooms: [room, ...s.rooms] })),
+  addRoom: (room) => set((s) => ({
+    rooms: s.rooms.some((r) => r.id === room.id)
+      ? s.rooms
+      : [room, ...s.rooms],
+  })),
   setActiveRoom: (room) => set({ activeRoom: room }),
 
   setMessages: (roomId, messages) =>
